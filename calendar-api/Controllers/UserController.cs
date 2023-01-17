@@ -1,4 +1,3 @@
-
 using calendar_api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +15,7 @@ namespace calendar_api.Controllers
         }
 
         [HttpGet(Name = "GetUser")]
-        public async Task<User?> GetUserById(int userId)
+        public async Task<User> GetUserById(string userId)
         {
             return await _context.Users.Where(u => u.Id == userId).FirstOrDefaultAsync();
         }

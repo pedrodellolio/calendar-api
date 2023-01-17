@@ -1,12 +1,15 @@
+using Microsoft.AspNetCore.Identity;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace calendar_api.Models
 {
-    public class User
+    public class User : IdentityUser
     {
-        public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
+        public string PasswordSalt { get; set; } = string.Empty;
+        //public byte[] PasswordHash { get; set; }
+        //public byte[] PasswordSalt { get; set; }
         //[JsonIgnore]
-        //public ICollection<CalendarTask> Tasks { get; set; }
+        //public ICollection<CalendarTask> Tasks { get; set; } = new List<CalendarTask>();
     }
 }
