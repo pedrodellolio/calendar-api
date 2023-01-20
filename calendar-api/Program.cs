@@ -1,5 +1,4 @@
 global using calendar_api.Data;
-using calendar_api.Configurations;
 using calendar_api.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;

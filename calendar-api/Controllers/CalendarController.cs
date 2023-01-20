@@ -1,5 +1,6 @@
 
 using calendar_api.Models;
+using calendar_api.Models.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -36,11 +37,17 @@ namespace calendar_api.Controllers
         }
 
         [HttpPost(Name = "CreateTask")]
-        public async Task<CalendarTask> CreateTask(CalendarTask task)
+        public async Task<CalendarTask> CreateTask(TaskDTO req)
         {
-            var loggedUser = await _context.Users.FindAsync(1);
-            if (loggedUser != null)
-                task.User = loggedUser;
+            var user = await _context.Users.Where(u => u.UserName == req.User.Username).FirstOrDefaultAsync();
+            var task = new CalendarTask
+            {
+                Description = req.Description,
+                StartDate = req.StartDate,
+                EndDate = req.EndDate,
+                Title = req.Title,
+                User = user
+            };
 
             _context.Tasks.Add(task);
             await _context.SaveChangesAsync();

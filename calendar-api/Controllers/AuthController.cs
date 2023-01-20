@@ -1,5 +1,4 @@
 
-using calendar_api.Configurations;
 using calendar_api.Models;
 using calendar_api.Models.DTOs;
 using Microsoft.AspNetCore.Identity;
@@ -38,7 +37,7 @@ namespace calendar_api.Controllers
                 return BadRequest("User already exists");
 
             CreatePasswordHash(req.Password, out byte[] passwordHash, out byte[] passwordSalt);
-            
+
             User user = new()
             {
                 UserName = req.Username,
@@ -57,7 +56,7 @@ namespace calendar_api.Controllers
         }
 
         [HttpPost("login")]
-        public async Task<ActionResult<string>> Login(UserRegistrationDTO req)
+        public async Task<ActionResult<dynamic>> Login(UserRegistrationDTO req)
         {
             var userDB = await _userManager.FindByNameAsync(req.Username);
 
@@ -69,7 +68,7 @@ namespace calendar_api.Controllers
                 return BadRequest("Wrong password");
 
             string token = CreateJwtToken(userDB);
-            return Ok(token);
+            return Ok(new { username = userDB.UserName, token });
 
             //if (!VerifyPasswordHash(req.Password, Encoding.UTF8.GetBytes(userDB.PasswordHash), Encoding.UTF8.GetBytes(userDB.PasswordSalt)))
             //    return BadRequest("Wrong password");
