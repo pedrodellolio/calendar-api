@@ -1,6 +1,8 @@
 
 using calendar_api.Models;
 using calendar_api.Models.DTOs;
+using calendar_api.Services.UserService;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -21,13 +23,19 @@ namespace calendar_api.Controllers
         public readonly DataContext _context;
         private readonly UserManager<User> _userManager;
         private readonly IConfiguration _config;
-
         public AuthController(DataContext context, UserManager<User> userManager, IConfiguration config)
         {
             _context = context;
             _userManager = userManager;
             _config = config;
         }
+
+        //[HttpGet, Authorize]
+        //public ActionResult<string> GetLoggedUser()
+        //{
+        //    var userName = _userService.GetLoggedUser();
+        //    return Ok(userName);
+        //}
 
         [HttpPost("register")]
         public async Task<ActionResult<string>> Register(UserRegistrationDTO req)
@@ -79,6 +87,7 @@ namespace calendar_api.Controllers
         {
             List<Claim> claims = new()
             {
+                new Claim(ClaimTypes.NameIdentifier, user.Id),
                 new Claim(ClaimTypes.Name, user.UserName)
             };
 

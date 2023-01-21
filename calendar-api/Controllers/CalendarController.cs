@@ -1,6 +1,7 @@
 
 using calendar_api.Models;
 using calendar_api.Models.DTOs;
+using calendar_api.Services.UserService;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,75 +14,93 @@ namespace calendar_api.Controllers
     [Authorize]
     public class CalendarController : ControllerBase
     {
+        private readonly IUserService _userService;
+        private readonly ICalendarService _calendarService;
+
         public readonly DataContext _context;
-        public CalendarController(DataContext context)
+        public CalendarController(DataContext context, IUserService userService, ICalendarService calendarService)
         {
+            _userService = userService;
+            _calendarService = calendarService;
             _context = context;
         }
 
-        [HttpGet]
-        public async Task<List<CalendarTask>> GetTasksByDate(DateTime date)
+        [HttpGet("date/{date}")]
+        public async Task<List<TaskDTO>> GetTasksByDate(DateTime date)
         {
-            var results = await _context.Tasks.Where(t => (t.StartDate.Day == date.Day) && (t.StartDate.Month == date.Month) && (t.StartDate.Year == date.Year)).ToListAsync();
-            return results;
+            var tasks = new List<TaskDTO>();
+            var results = await _calendarService.GetTasksByDate(date);
+            results.ForEach(task =>
+            {
+                tasks.Add(new TaskDTO
+                {
+                    Id = task.Id,
+                    Description = task.Description,
+                    Title = task.Title,
+                    StartDateInMilliseconds = task.StartDate.Millisecond,
+                    EndDateInMilliseconds = task.EndDate.Millisecond
+                });
+
+            });
+            return tasks;
         }
 
         [HttpGet("id/{taskId}")]
-        public async Task<ActionResult<CalendarTask>> GetTasksById(int taskId)
+        public async Task<ActionResult<TaskDTO>> GetTaskById(int taskId)
         {
-            var task = await _context.Tasks.FindAsync(taskId);
-            if (task == null)
+            var taskDB = await _calendarService.GetTaskById(taskId);
+            if (taskDB == null)
                 BadRequest("Task not found");
 
+            var task = new TaskDTO
+            {
+                Id = taskDB.Id,
+                Description = taskDB.Description,
+                Title = taskDB.Title,
+                StartDateInMilliseconds = new DateTimeOffset(taskDB.StartDate).ToUnixTimeMilliseconds(),
+                EndDateInMilliseconds = new DateTimeOffset(taskDB.EndDate).ToUnixTimeMilliseconds()
+            };
             return Ok(task);
         }
 
-        [HttpPost(Name = "CreateTask")]
-        public async Task<CalendarTask> CreateTask(TaskDTO req)
+        [HttpPost]
+        public async Task<ActionResult<CalendarTask>> CreateTask(TaskDTO req)
         {
-            var user = await _context.Users.Where(u => u.UserName == req.User.Username).FirstOrDefaultAsync();
+            var user = await _userService.GetLoggedUser();
             var task = new CalendarTask
             {
                 Description = req.Description,
-                StartDate = req.StartDate,
-                EndDate = req.EndDate,
+                StartDate = DateTimeOffset.FromUnixTimeMilliseconds(req.StartDateInMilliseconds).LocalDateTime,
+                EndDate = DateTimeOffset.FromUnixTimeMilliseconds(req.EndDateInMilliseconds).LocalDateTime,
                 Title = req.Title,
-                User = user
+                User = user!
             };
 
-            _context.Tasks.Add(task);
-            await _context.SaveChangesAsync();
-            return task;
+            await _calendarService.CreateTask(task);
+            return Ok(task);
         }
 
-        [HttpPut(Name = "UpdateTask")]
-        public async Task<ActionResult<CalendarTask>> UpdateTask(CalendarTask task)
+        [HttpPut]
+        public async Task<ActionResult<CalendarTask>> UpdateTask(TaskDTO task)
         {
             var dbTask = await _context.Tasks.FindAsync(task.Id);
-
             if (dbTask == null)
                 BadRequest("Task not found");
             else
-            {
-                dbTask.Title = task.Title;
-                dbTask.Description = task.Description;
-                dbTask.StartDate = task.StartDate;
-                dbTask.EndDate = task.EndDate;
-            }
+                await _calendarService.UpdateTask(dbTask, task);
 
-            await _context.SaveChangesAsync();
             return Ok(dbTask);
         }
 
-        [HttpDelete(Name = "DeleteTask")]
+        [HttpDelete("id/{taskId}")]
         public async Task<ActionResult> DeleteTaskById(int taskId)
         {
-            var task = await _context.Tasks.FindAsync(taskId);
+            var task = await _calendarService.GetTaskById(taskId);
 
             if (task == null)
                 return BadRequest("Task not found");
 
-            _context.Tasks.Remove(task);
+            await _calendarService.DeleteTask(task);
             return Ok();
         }
     }

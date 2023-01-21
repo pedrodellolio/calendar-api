@@ -13,11 +13,5 @@ namespace calendar_api.Controllers
         {
             _context = context;
         }
-
-        [HttpGet(Name = "GetUser")]
-        public async Task<User> GetUserById(string userId)
-        {
-            return await _context.Users.Where(u => u.Id == userId).FirstOrDefaultAsync();
-        }
     }
 }
